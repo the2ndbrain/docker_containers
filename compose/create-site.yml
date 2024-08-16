@@ -10,8 +10,8 @@ services:
       - new-site
       - --no-mariadb-socket
       - --install-app=erpnext
-      - --db-root-password=admin
-      - --admin-password=admin
+      - --db-root-password=${DB_PASSWORD}
+      - --admin-password=${ADMIN_PASSWORD}
     deploy:
       restart_policy:
         condition: none
