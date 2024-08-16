@@ -12,12 +12,15 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --skip-character-set-client-handshake
       - --skip-innodb-read-only-compressed
+      - --bind-address=0.0.0.0 
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-admin}
     volumes:
       - db-data:/var/lib/mysql
     networks:
       - mariadb-network
+    ports:
+      - "3306:3306"  # Expose MariaDB port
 
 volumes:
   db-data:
