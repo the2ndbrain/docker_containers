@@ -12,7 +12,6 @@ services:
       - --install-app=erpnext
       - --db-root-password=admin
       - --admin-password=admin
-      - erp.example.com
     deploy:
       restart_policy:
         condition: none
