@@ -1,0 +1,54 @@
+version: "3.7"
+services:
+  restore-site:
+    image: frappe/erpnext:${VERSION:?No image version set}
+    deploy:
+      mode: replicated
+      replicas: 0
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.schedule=0 1 * * *"  # Schedule: daily at 1 AM
+        - "swarm.cronjob.skip-running=false"
+      restart_policy:
+        condition: none
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        # Check if SITE_NAME is provided
+        if [ -z "$SITE_NAME" ]; then
+          echo "SITE_NAME is not set. Please set the SITE_NAME environment variable."
+          exit 1
+        fi
+
+        # Create directory for the site if it doesn't exist
+        mkdir -p /home/frappe/frappe-bench/sites/$SITE_NAME
+
+        # Download backup files for the specific site
+        aws s3 sync s3://${S3_BUCKET_NAME}/$SITE_NAME /home/frappe/frappe-bench/sites/$SITE_NAME
+
+        # Restore the site
+        bench --site $SITE_NAME restore /home/frappe/frappe-bench/sites/$SITE_NAME/backup.sql
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_REGION:-us-east-1}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - SITE_NAME=${SITE_NAME}  # Set the site name to restore
+    volumes:
+      - "sites:/home/frappe/frappe-bench/sites"
+    networks:
+      - bench-network
+      - mariadb-network
+
+networks:
+  bench-network:
+    name: ${BENCH_NAME:-erpnext}
+    external: true
+  mariadb-network:
+    name: mariadb-network
+    external: true
+
+volumes:
+  sites:
+    external: true
+    name: ${BENCH_NAME:-erpnext}_sites
