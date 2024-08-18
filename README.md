@@ -184,3 +184,8 @@ In case of docker setup there is not CRON scheduler running. It is needed to tak
 - `compose/configure-erpnext.yml`: Use to setup `sites/common_site_config.json`. Set `VERSION` and optionally `BENCH_NAME` environment variables.
 - `compose/create-site.yml`: Use to create a site. Set `VERSION` and optionally `BENCH_NAME` environment variables. Change the command for site name, apps to be installed, admin password and db root password.
 - `compose/erpnext-backup.yml`: Use to backup and push snapshots. Set environment variables mentioned in comments in the file.
+
+### Multiple Site Deployment
+- Step 1 - Add comma Separated Site Name in erpnext YML and update the stack
+- Step 2 - Deploy stack creat-site by adding site name
+After performing above step it will create new site in frappe bench, Which is accessable add the domain site name you have added in erpnext yml file
