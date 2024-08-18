@@ -1,0 +1,55 @@
+version: "3.7"
+services:
+  restore-sites:
+    image: frappe/erpnext:${VERSION:?No image version set}
+    deploy:
+      mode: replicated
+      replicas: 0
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.schedule=0 1 * * *"  # Schedule: daily at 1 AM
+        - "swarm.cronjob.skip-running=false"
+      restart_policy:
+        condition: none
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        # Download backups from S3
+        for site_name in $(aws s3 ls s3://${S3_BUCKET_NAME}/ --recursive | awk '{print $4}' | grep '/$'); do
+          # Create directory for the site if it doesn't exist
+          mkdir -p /home/frappe/frappe-bench/sites/$site_name
+
+          # Download backup files
+          aws s3 sync s3://${S3_BUCKET_NAME}/$site_name /home/frappe/frappe-bench/sites/$site_name
+
+          # Restore the site
+          bench --site $site_name restore /home/frappe/frappe-bench/sites/$site_name/backup.sql
+        done
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_REGION:-us-east-1}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+    volumes:
+      - "sites:/home/frappe/frappe-bench/sites"
+    networks:
+      - bench-network
+      - mariadb-network
+
+networks:
+  bench-network:
+    name: ${BENCH_NAME:-erpnext}
+    external: true
+  mariadb-network:
+    name: mariadb-network
+    external: true
+
+volumes:
+  sites:
+    external: true
+    name: ${BENCH_NAME:-erpnext}_sites
+
+# Explanation:
+# Download Backups: The aws s3 sync command downloads the backup files from the specific folder for each site from the S3 bucket.
+# Create Directories: Ensure that a directory for each site exists before restoring.
+# Restore Backups: The bench --site $site_name restore /home/frappe/frappe-bench/sites/$site_name/backup.sql command restores the SQL backup to the respective site. Adjust the path to the backup file if necessary.
