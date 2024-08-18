@@ -1,0 +1,51 @@
+version: "3.7"
+services:
+  backup-sites:
+    image: frappe/erpnext:${VERSION:?No image version set}
+    deploy:
+      mode: replicated
+      replicas: 0  # The service runs on a cron schedule, no persistent replicas needed
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.schedule=0 */6 * * *"  # Schedule: every 6 hours
+        - "swarm.cronjob.skip-running=false"
+      restart_policy:
+        condition: none
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        # Take backup of all sites (includes SQL, files, and private files)
+        bench --site all backup --with-files
+
+        # Loop through each site folder and upload it to its own S3 folder
+        for site in /home/frappe/frappe-bench/sites/*; do
+          if [ -d "$site" ]; then
+            site_name=$(basename "$site")
+            aws s3 sync "$site" "s3://${S3_BUCKET_NAME}/${site_name}/" --storage-class STANDARD_IA
+          fi
+        done
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_REGION:-us-east-1}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+    volumes:
+      - "sites:/home/frappe/frappe-bench/sites"
+    networks:
+      - bench-network
+      - mariadb-network
+
+networks:
+  bench-network:
+    name: ${BENCH_NAME:-erpnext}
+    external: true
+  mariadb-network:
+    name: mariadb-network
+    external: true
+
+volumes:
+  sites:
+    external: true
+    name: ${BENCH_NAME:-erpnext}_sites
+
+# Add AWS ACCESS KEY, SECRET KEY and S3 BUCKET NAME
