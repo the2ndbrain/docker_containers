@@ -41,7 +41,7 @@ su - ubuntu
 Clone this repo
 
 ```shell
-git clone https://clinic360-admin@bitbucket.org/clinic360/docker-cotainers.git
+git clone https://github.com/the2ndbrain/docker_containers.git
 cd custom_containers
 ```
 
