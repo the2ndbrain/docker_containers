@@ -189,3 +189,21 @@ In case of docker setup there is not CRON scheduler running. It is needed to tak
 - Step 1 - Add comma Separated Site Name in erpnext YML and update the stack
 - Step 2 - Deploy stack creat-site by adding site name
 After performing above step it will create new site in frappe bench, Which is accessable add the domain site name you have added in erpnext yml file
+
+
+### Useful commands
+
+***For Removing Site From Frappe***
+- rm -rf <site_name>
+
+***For Removing Database From MariaDb***
+- Docker exec -it <mariadb_container_name> bash
+- mysql -u root -p
+- Enter Password
+- SHOW DATABASES;
+- DROP DATABASE <DATABASE_NAME>
+
+***Enabling Server Site Script***
+- Bin Bash to Frappe Directory
+- bench set-config -g server_script_enabled 1
+
